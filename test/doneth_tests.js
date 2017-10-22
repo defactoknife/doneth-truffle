@@ -35,8 +35,7 @@ contract('Doneth', function(accounts) {
             assert.equal(founderMember[1], true); // admin
             assert.equal(founderMember[2], 1); // shares
             assert.equal(founderMember[3], 0); // withdrawn
-            assert.equal(founderMember[4], 0); // totalWithdrawableValue
-            assert.equal(founderMember[5], 'Ray Kroc'); // memberName
+            assert.equal(founderMember[4], 'Ray Kroc'); // memberName
         });
     });
 
@@ -48,8 +47,7 @@ contract('Doneth', function(accounts) {
             assert.equal(newMember[1], false); // admin
             assert.equal(newMember[2], 100); // shares
             assert.equal(newMember[3], 0); // withdrawn
-            assert.equal(newMember[4], 0); // totalWithdrawableValue
-            assert.equal(newMember[5], 'Maurice McDonald'); // memberName
+            assert.equal(newMember[4], 'Maurice McDonald'); // memberName
         });
 
         it("should remove 50 shares from Maurice", async function() {
@@ -60,8 +58,7 @@ contract('Doneth', function(accounts) {
             assert.equal(newMember[1], false); // admin
             assert.equal(newMember[2], 50); // shares
             assert.equal(newMember[3], 0); // withdrawn
-            assert.equal(newMember[4], 0); // totalWithdrawableValue
-            assert.equal(newMember[5], 'Maurice McDonald'); // memberName
+            assert.equal(newMember[4], 'Maurice McDonald'); // memberName
         });
     });
 
@@ -86,37 +83,21 @@ contract('Doneth', function(accounts) {
             assert.equal(newMember[1], false); // admin
             assert.equal(newMember[2], 75); // shares
             assert.equal(newMember[3], 25); // withdrawn
-            assert.equal(newMember[4], 75); // totalWithdrawableValue
-            assert.equal(newMember[5], 'Maurice McDonald'); // memberName
+            assert.equal(newMember[4], 'Maurice McDonald'); // memberName
 
-           // newTotal should be less the old total, so member variable unchanged
+           // Check that totalWithdrawn is correct
            const newTotal = await doneth.calculateTotalWithdrawableAmount(accounts[1]);
-           const account1Member = await doneth.returnMember(accounts[1]);
-           assert.equal(true, newTotal < account1Member[4]);
+           assert.equal(75, newTotal);
+           const totalWithdrawn = await doneth.totalWithdrawn();
+           assert.equal(25, totalWithdrawn);
         });
     });
 
-    describe("test updateTotalWithdrawableAmounts", function() {
-        it("With four accounts with shares, adjust totalWithdrawalAmount on each account accordingly", async function() {
-            await doneth.addShare(web3.eth.coinbase, 24);
-            await doneth.addMember(accounts[1], 25, false, "Maurice McDonald");
-            await doneth.addMember(accounts[2], 25, false, "Ronald McDonald");
-            await doneth.addMember(accounts[3], 25, false, "Richard McDonald");
-
-            // Add 50 to accounts[2]
-            await doneth.addShare(accounts[2], 50);
-
-            // Observe that totalWithdrawableAmount has not changed
-            const member0 = await doneth.returnMember(accounts[0]);
-            assert.equal(member0[4], 25); // totalWithdrawableValue
-            const member1 = await doneth.returnMember(accounts[1]);
-            assert.equal(member1[4], 25); // totalWithdrawableValue
-            const member2 = await doneth.returnMember(accounts[2]);
-            assert.equal(member2[4], 25); // totalWithdrawableValue
-            const member3 = await doneth.returnMember(accounts[3]);
-            assert.equal(member3[4], 25); // totalWithdrawableValue
-
+    /*
+    describe("test with complex example", function() {
+        it("should ", async function() {
 
         });
     });
+    */
 });

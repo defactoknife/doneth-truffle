@@ -6,6 +6,7 @@ contract Doneth {
     address public founder;
     string public name;
     uint256 public totalShares;
+    uint256 public totalWithdrawn;
     bool public incrementShares;
     uint256 public incrementInterval;
     uint256 public genesisBlockNumber;
@@ -20,7 +21,6 @@ contract Doneth {
         bool admin;
         uint256 shares;
         uint256 withdrawn;
-        uint256 totalWithdrawableAmount;
         string memberName;
     }
 
@@ -32,9 +32,9 @@ contract Doneth {
     }
 
     event Deposit(address from, uint value);
-    event Withdraw(address from, uint value, uint256 totalWithdrawableAmount);
-    event AddShare(address who, uint256 addedShares, uint256 newTotalShares, uint256 newTotalWithdrawableAmount);
-    event RemoveShare(address who, uint256 removedShares, uint256 newTotalShares, uint256 newTotalWithdrawableAmount);
+    event Withdraw(address from, uint value, uint256 newTotalWithdrawn);
+    event AddShare(address who, uint256 addedShares, uint256 newTotalShares);
+    event RemoveShare(address who, uint256 removedShares, uint256 newTotalShares);
 
     event Division(uint256 num, uint256 balance, uint256 shares);
 
@@ -72,9 +72,9 @@ contract Doneth {
         return (name, founder, genesisBlockNumber);
     }
     
-    function returnMember (address _address) constant  onlyExisting(_address) returns(bool active, bool admin, uint256 shares, uint256 withdrawn, uint256 totalWithdrawableAmount, string memberName) {
+    function returnMember (address _address) constant onlyExisting(_address) returns(bool active, bool admin, uint256 shares, uint256 withdrawn, string memberName) {
       Member memory m = members[_address];
-      return (m.active, m.admin, m.shares, m.withdrawn, m.totalWithdrawableAmount, m.memberName);
+      return (m.active, m.admin, m.shares, m.withdrawn, m.memberName);
     }
 
     function addMember(address who, uint256 shares, bool admin, string founderName) public onlyAdmin() {
@@ -88,45 +88,25 @@ contract Doneth {
         addShare(who, shares);
     }
 
-    // When increase share amount, change totalWithdrawableAmount to increased amount.
-    // When decrease share amount, change totalWithdrawableAmount to decreased amount.
     function addShare(address who, uint256 amount) public onlyAdmin() onlyExisting(who) {
         totalShares = totalShares.add(amount);
         members[who].shares = members[who].shares.add(amount);
-        updateTotalWithdrawableAmounts();
-        AddShare(who, amount, members[who].shares, members[who].totalWithdrawableAmount);
+        AddShare(who, amount, members[who].shares);
     }
 
     function removeShare(address who, uint256 amount) public onlyAdmin() onlyExisting(who) {
         totalShares = totalShares.sub(amount);
         members[who].shares = members[who].shares.sub(amount);
-        updateTotalWithdrawableAmounts();
-        RemoveShare(who, amount, members[who].shares, members[who].totalWithdrawableAmount);
+        RemoveShare(who, amount, members[who].shares);
     }
 
-    function updateTotalWithdrawableAmounts() internal onlyAdmin() {
-        // Iterate over all members to adjust totalWithdrawableAmount.
-        for (uint256 i = 0; i < memberKeys.length; i++) {
-            address curr = memberKeys[i];        
-            uint256 newTotal = calculateTotalWithdrawableAmount(curr);
-            Member memory currMember = members[curr];
-            currMember.totalWithdrawableAmount = newTotal;
-        }
-    }
-
-    // When contract balance increased since the last withdrawal due to a deposit, adjust 
-    // totalWithdrawableAmount to increased value.
-    // When contract balanced decreased due to previous withdrawal, maintain higher old value.
     function withdraw(uint256 amount) public onlyExisting(msg.sender) {
         uint256 newTotal = calculateTotalWithdrawableAmount(msg.sender);
-        if (newTotal > members[msg.sender].totalWithdrawableAmount) {
-            members[msg.sender].totalWithdrawableAmount = newTotal;
-        }
-
-        if (amount > members[msg.sender].totalWithdrawableAmount.sub(members[msg.sender].withdrawn)) revert();
+        if (amount > newTotal.sub(members[msg.sender].withdrawn)) revert();
         members[msg.sender].withdrawn = members[msg.sender].withdrawn.add(amount);
+        totalWithdrawn = totalWithdrawn.add(amount);
         msg.sender.transfer(amount);
-        Withdraw(msg.sender, amount, members[msg.sender].totalWithdrawableAmount);
+        Withdraw(msg.sender, amount, totalWithdrawn);
     }
 
     // Converting from shares to Eth
@@ -134,12 +114,13 @@ contract Doneth {
     // 100 Eth / 1000 total shares = 1/10 eth per share * 100 shares = 10 Eth to cash out
     function calculateTotalWithdrawableAmount(address who) public constant onlyExisting(who) returns (uint256) {
         // Need to use parts-per notation to compute percentages for lack of floating point division
-        uint256 ethPerSharePPN = this.balance.percent(totalShares, PRECISION); 
-        Division(ethPerSharePPN, this.balance, totalShares);
+        uint256 balanceSum = this.balance.add(totalWithdrawn);
+        uint256 ethPerSharePPN = balanceSum.percent(totalShares, PRECISION); 
+        Division(ethPerSharePPN, balanceSum, totalShares);
         uint256 ethPPN = ethPerSharePPN.mul(members[who].shares);
-        Division(ethPPN, this.balance, totalShares);
+        Division(ethPPN, balanceSum, totalShares);
         uint256 ethVal = ethPPN.div(10**PRECISION); 
-        Division(ethVal, this.balance, totalShares);
+        Division(ethVal, balanceSum, totalShares);
         return ethVal;
     }
 }
