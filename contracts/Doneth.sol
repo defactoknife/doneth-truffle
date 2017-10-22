@@ -76,6 +76,23 @@ contract Doneth {
         _;
     }
 
+    function getMemberCount() constant returns(uint){
+      return memberKeys.length;
+    }
+    
+    function getMemberAtKey (uint key) constant returns(address) {
+      return memberKeys[key];
+    }
+    
+    function returnMember (address _address) constant  onlyExisting(_address) returns(bool active, bool admin, uint256 shares, uint256 withdrawn) {
+      Member m = members[_address];
+      return (m.active, m.admin, m.shares, m.withdrawn);
+    }
+    
+    function returnBalance () constant return(uint256 balance) {
+      return this.balance;
+    }
+
     function addMember(address who, uint256 shares, bool admin) public onlyAdmin() {
         Member memory newMember;
         newMember.exists = true;
@@ -109,7 +126,7 @@ contract Doneth {
     // Converting from shares to Eth
     // 100 shares, 1000 total shares 
     // 100 Eth / 1000 total shares = 1/10 eth per share * 100 shares = 10 Eth to cash out
-    function amountOwed(address who) public onlyExisting(who) returns (uint256) {
+    function amountOwed(address who) public constant onlyExisting(who) returns (uint256) {
         uint256 ethPerShare = this.balance.div(totalShares); 
         return ethPerShare.mul(members[who].shares);
     }
