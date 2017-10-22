@@ -78,6 +78,8 @@ contract Doneth {
     }
 
     function addMember(address who, uint256 shares, bool admin, string founderName) public onlyAdmin() {
+        if (members[who].exists) revert();
+
         Member memory newMember;
         newMember.exists = true;
         newMember.admin = admin;
