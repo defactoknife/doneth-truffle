@@ -54,12 +54,16 @@ contract Doneth {
     }
     
     function returnMember (address _address) constant  onlyExisting(_address) returns(bool active, bool admin, uint256 shares, uint256 withdrawn) {
-      Member m = members[_address];
+      Member memory m = members[_address];
       return (m.active, m.admin, m.shares, m.withdrawn);
     }
     
-    function returnBalance () constant return(uint256 balance) {
+    function returnBalance() constant returns(uint256 balance) {
       return this.balance;
+    }
+    
+    function returnFounder() constant returns(address) {
+      return founder;
     }
 
     function addMember(address who, uint256 shares, bool admin) public onlyAdmin() {
