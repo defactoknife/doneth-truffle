@@ -1,4 +1,4 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.15;
 
 contract Doneth {
     using SafeMath for uint256;  
@@ -8,6 +8,7 @@ contract Doneth {
     uint256 public totalShares;
     bool public incrementShares;
     uint256 public incrementInterval;
+    uint256 public genesisBlockNumber;
 
     mapping(address => Member) public members;
     address[] public memberKeys;
@@ -24,6 +25,7 @@ contract Doneth {
     function Doneth(string _contractName, string _founderName) {
         name = _contractName;
         founder = msg.sender;
+        genesisBlockNumber = block.number;
         addMember(msg.sender, 1, true, _founderName);
     }
 
@@ -93,7 +95,7 @@ contract Doneth {
     function withdraw(uint256 amount) public onlyExisting(msg.sender) {
         uint256 owed = amountOwed(msg.sender);
         if (amount > owed.sub(members[msg.sender].withdrawn)) revert();
-        members[msg.sender].withdrawn.add(amount);
+        members[msg.sender].withdrawn = members[msg.sender].withdrawn.add(amount);
         msg.sender.transfer(amount);
         Withdraw(msg.sender, amount);
     }
