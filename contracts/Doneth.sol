@@ -72,6 +72,7 @@ contract Doneth {
         newMember.admin = admin;
         newMember.active = true;
         members[who] = newMember;
+        memberKeys.push(who);
         addShare(who, shares);
     }
 
