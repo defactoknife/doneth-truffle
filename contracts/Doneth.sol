@@ -45,6 +45,10 @@ contract Doneth {
         _;
     }
 
+    function getFounder() constant returns(address){
+      return founder;
+    }
+
     function getMemberCount() constant returns(uint){
       return memberKeys.length;
     }
