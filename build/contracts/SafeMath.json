@@ -1,8 +1,21 @@
 {
   "contract_name": "SafeMath",
-  "abi": [],
-  "unlinked_binary": "0x60606040523415600e57600080fd5b5b603680601c6000396000f30060606040525b600080fd00a165627a7a72305820b0789ab790479d9dc141554eecce9b0dc1dc4003ac266ed00dfde1e317748ec00029",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "name": "retval",
+          "type": "uint256"
+        }
+      ],
+      "name": "Percent",
+      "type": "event"
+    }
+  ],
+  "unlinked_binary": "0x60606040523415600e57600080fd5b5b603680601c6000396000f30060606040525b600080fd00a165627a7a7230582041b4e3cd391f4a9fb895a60a4b45ebbc4c9d6109ac08b57138bedf825180f90e0029",
   "networks": {},
   "schema_version": "0.0.5",
-  "updated_at": 1508649862247
+  "updated_at": 1508674209347
 }

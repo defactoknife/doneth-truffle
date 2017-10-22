@@ -64,10 +64,16 @@
     "1508554733085": {
       "events": {},
       "links": {},
-      "address": "0xb5d886e9239942e5f72561fd50b1ad732bb8ec30",
-      "updated_at": 1508649864389
+      "address": "0x68ab3c4c5bb61912c3ba256e89e939431773fdee",
+      "updated_at": 1508654752461
+    },
+    "1508658550645": {
+      "events": {},
+      "links": {},
+      "address": "0xff2fafab05a29c47de942a90cf6e2ae025af7f6e",
+      "updated_at": 1508674211446
     }
   },
   "schema_version": "0.0.5",
-  "updated_at": 1508649864389
+  "updated_at": 1508674211446
 }

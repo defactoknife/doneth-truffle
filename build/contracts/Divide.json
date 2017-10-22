@@ -1,0 +1,35 @@
+{
+  "contract_name": "Divide",
+  "abi": [
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "name": "numerator",
+          "type": "uint256"
+        },
+        {
+          "name": "denominator",
+          "type": "uint256"
+        },
+        {
+          "name": "precision",
+          "type": "uint256"
+        }
+      ],
+      "name": "percent",
+      "outputs": [
+        {
+          "name": "quotient",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    }
+  ],
+  "unlinked_binary": "0x6060604052341561000f57600080fd5b5b6101148061001f6000396000f300606060405263ffffffff7c01000000000000000000000000000000000000000000000000000000006000350416622c1a9e8114603b575b600080fd5b604a600435602435604435605c565b60405190815260200160405180910390f35b6000808060748660018601600a0a63ffffffff60a116565b9150600a6086838763ffffffff60cd16565b600501811515609157fe5b0490508092505b50509392505050565b600082820283158060bb575082848281151560b857fe5b04145b151560c257fe5b8091505b5092915050565b600080828481151560da57fe5b0490508091505b50929150505600a165627a7a723058209d59a72e629b3c10f97fede18171ecc143e2485d52028295864ada376227c1a50029",
+  "networks": {},
+  "schema_version": "0.0.5",
+  "updated_at": 1508653499132
+}
