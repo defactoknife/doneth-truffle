@@ -68,8 +68,8 @@ contract Doneth {
       return founder;
     }
 
-    function getContractInfo() constant returns(string, address, uint256) {
-        return (name, founder, genesisBlockNumber);
+    function getContractInfo() constant returns(string, address, uint256, uint256, uint256) {
+        return (name, founder, genesisBlockNumber, totalShares, totalWithdrawn);
     }
     
     function returnMember (address _address) constant onlyExisting(_address) returns(bool active, bool admin, uint256 shares, uint256 withdrawn, string memberName) {
@@ -123,6 +123,10 @@ contract Doneth {
         Division(ethVal, balanceSum, totalShares);
         return ethVal;
     }
+
+    function delegatePercent(uint256 a, uint256 b, uint256 c) public constant returns (uint256) {
+        return a.percent(b, c);
+    }
 }
 
 /**
@@ -130,7 +134,6 @@ contract Doneth {
  * @dev Math operations with safety checks that throw on error
  */
 library SafeMath {
-    event Percent(uint256 retval);
     function mul(uint256 a, uint256 b) internal constant returns (uint256) {
         uint256 c = a * b;
         assert(a == 0 || c / a == b);
@@ -159,10 +162,10 @@ library SafeMath {
     // Adapted to use SafeMath and uint256
     function percent(uint256 numerator, uint256 denominator, uint256 precision) internal constant returns(uint256 quotient) {
         // caution, check safe-to-multiply here
-        uint256 _numerator  = mul(numerator, 10 ** (precision+1));
+        uint256 _numerator = mul(numerator, 10 ** (precision+1));
         // with rounding of last digit
         uint256 _quotient = (div(_numerator, denominator) + 5) / 10;
-        return ( _quotient);
+        return (_quotient);
     }
 }
 

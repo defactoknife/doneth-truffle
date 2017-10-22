@@ -145,4 +145,11 @@ contract('Doneth', function(accounts) {
             assert.equal(member2[3], 80); // withdrawn
         });
     });
+
+    describe("percent function test", function() {
+        it("should give back 25% with 25 and 100", async function() {
+            var num = await doneth.delegatePercent(25, 100, 5);
+            assert.equal(num, 25000);
+        });
+    });
 });
