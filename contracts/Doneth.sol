@@ -18,18 +18,19 @@ contract Doneth {
         bool admin;
         uint256 shares;
         uint256 withdrawn;
+        string memberName;
     }
 
-    function Doneth(string _name) {
-        name = _name;
+    function Doneth(string _contractName, string _founderName) {
+        name = _contractName;
         founder = msg.sender;
-        addMember(msg.sender, 1, true);
+        addMember(msg.sender, 1, true, _founderName);
     }
 
     event Deposit(address from, uint value);
     event Withdraw(address from, uint value);
-    event AddShare(address who, uint256 shares);
-    event RemoveShare(address who, uint256 shares);
+    event AddShare(address who, uint256 addedShares, uint256 newTotalShares);
+    event RemoveShare(address who, uint256 removedShares, uint256 newTotalShares);
 
     function () public payable {
         Deposit(msg.sender, msg.value);
@@ -53,40 +54,40 @@ contract Doneth {
       return memberKeys[key];
     }
     
-    function returnMember (address _address) constant  onlyExisting(_address) returns(bool active, bool admin, uint256 shares, uint256 withdrawn) {
-      Member memory m = members[_address];
-      return (m.active, m.admin, m.shares, m.withdrawn);
-    }
-    
-    function returnBalance() constant returns(uint256 balance) {
+    function getBalance() constant returns(uint256 balance) {
       return this.balance;
     }
     
-    function returnFounder() constant returns(address) {
+    function getFounder() constant returns(address) {
       return founder;
     }
+    
+    function returnMember (address _address) constant  onlyExisting(_address) returns(bool active, bool admin, uint256 shares, uint256 withdrawn, string memberName) {
+      Member memory m = members[_address];
+      return (m.active, m.admin, m.shares, m.withdrawn, m.memberName);
+    }
 
-    function addMember(address who, uint256 shares, bool admin) public onlyAdmin() {
+    function addMember(address who, uint256 shares, bool admin, string founderName) public onlyAdmin() {
         Member memory newMember;
         newMember.exists = true;
         newMember.admin = admin;
         newMember.active = true;
+        newMember.memberName = founderName;
         members[who] = newMember;
         memberKeys.push(who);
         addShare(who, shares);
     }
 
-
     function addShare(address who, uint256 amount) public onlyAdmin() onlyExisting(who) {
         totalShares = totalShares.add(amount);
         members[who].shares = members[who].shares.add(amount);
-        AddShare(who, amount);
+        AddShare(who, amount, members[who].shares);
     }
 
     function removeShare(address who, uint256 amount) public onlyAdmin() onlyExisting(who) {
         totalShares = totalShares.sub(amount);
         members[who].shares = members[who].shares.sub(amount);
-        RemoveShare(who, amount);
+        RemoveShare(who, amount, members[who].shares);
     }
 
     function withdraw(uint256 amount) public onlyExisting(msg.sender) {
