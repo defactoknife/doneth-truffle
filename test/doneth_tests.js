@@ -93,11 +93,56 @@ contract('Doneth', function(accounts) {
         });
     });
 
-    /*
     describe("test with complex example", function() {
-        it("should ", async function() {
+        it("should succeed depositing, withdrawing, and adding shares", async function() {
+            // Send 100 Eth to contract
+            web3.eth.sendTransaction({from: web3.eth.coinbase, to: doneth.address, value: 100});
+            assert.equal(web3.eth.getBalance(doneth.address), 100);
 
+            // account0 has 25 shares, account1 has 75 shares
+            await doneth.addShare(web3.eth.coinbase, 24);
+            await doneth.addMember(accounts[1], 75, false, "Maurice McDonald");
+
+            // account0 withdraw 20 Eth
+            await doneth.withdraw(20, {from: accounts[0]});
+            assert.equal(web3.eth.getBalance(doneth.address), 80);
+
+            // totalWithdrawn should be 20
+            const totalWithdrawn = await doneth.totalWithdrawn();
+            assert.equal(20, totalWithdrawn);
+            var newMember = await doneth.returnMember(accounts[0]);
+            assert.equal(newMember[3], 20); // withdrawn
+
+            // increase balance by 100
+            web3.eth.sendTransaction({from: web3.eth.coinbase, to: doneth.address, value: 100});
+            assert.equal(web3.eth.getBalance(doneth.address), 180);
+
+            // account0 withdraw 30 Eth
+            await doneth.withdraw(30, {from: accounts[0]});
+            assert.equal(web3.eth.getBalance(doneth.address), 150);
+            newMember = await doneth.returnMember(accounts[0]);
+            assert.equal(newMember[3], 50); // withdrawn
+
+            // add 50 shares to account0, should now be able to withdraw another 49
+            await doneth.addShare(web3.eth.coinbase, 50);
+
+            var total = await doneth.totalShares();
+            newMember = await doneth.returnMember(accounts[0]);
+            const newTotal = await doneth.calculateTotalWithdrawableAmount(accounts[1]);
+
+            // can only withdraw 49 due to rounding
+            await doneth.withdraw(49, {from: accounts[0]});
+            assert.equal(web3.eth.getBalance(doneth.address), 101);
+            newMember = await doneth.returnMember(accounts[0]);
+            assert.equal(newMember[3], 99); // withdrawn
+            
+            // add another account with 100 shares, account has 100/250 shares
+            // so they are entitled to 0.4*200 = 80 Eth
+            await doneth.addMember(accounts[2], 100, false, "Richard McDonald");
+            await doneth.withdraw(80, {from: accounts[2]});
+            assert.equal(web3.eth.getBalance(doneth.address), 21);
+            const member2 = await doneth.returnMember(accounts[2]);
+            assert.equal(member2[3], 80); // withdrawn
         });
     });
-    */
 });

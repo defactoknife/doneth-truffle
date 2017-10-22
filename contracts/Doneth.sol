@@ -10,7 +10,7 @@ contract Doneth {
     bool public incrementShares;
     uint256 public incrementInterval;
     uint256 public genesisBlockNumber;
-    uint256 constant public PRECISION = 3;
+    uint256 constant public PRECISION = 18;
 
     mapping(address => Member) public members;
     address[] public memberKeys;
