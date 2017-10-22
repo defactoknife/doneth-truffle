@@ -152,4 +152,17 @@ contract('Doneth', function(accounts) {
             assert.equal(num, 25000);
         });
     });
+
+    describe("duplicate add member test", function() {
+        it("should throw an error if you add a duplicate member", async function() {
+            try {
+                await doneth.addMember(accounts[0], 100, false, "Richard McDonald");
+            } catch (error) {
+                const invalidOpcode = error.message.search('invalid opcode') >= 0;
+                assert(invalidOpcode, "Expected throw, got '" + error + "' instead");
+                return;
+            }
+            assert.fail('Expected throw not received');
+        });
+    });
 });
