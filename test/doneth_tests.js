@@ -95,4 +95,28 @@ contract('Doneth', function(accounts) {
            assert.equal(true, newTotal < account1Member[4]);
         });
     });
+
+    describe("test updateTotalWithdrawableAmounts", function() {
+        it("With four accounts with shares, adjust totalWithdrawalAmount on each account accordingly", async function() {
+            await doneth.addShare(web3.eth.coinbase, 24);
+            await doneth.addMember(accounts[1], 25, false, "Maurice McDonald");
+            await doneth.addMember(accounts[2], 25, false, "Ronald McDonald");
+            await doneth.addMember(accounts[3], 25, false, "Richard McDonald");
+
+            // Add 50 to accounts[2]
+            await doneth.addShare(accounts[2], 50);
+
+            // Observe that totalWithdrawableAmount has not changed
+            const member0 = await doneth.returnMember(accounts[0]);
+            assert.equal(member0[4], 25); // totalWithdrawableValue
+            const member1 = await doneth.returnMember(accounts[1]);
+            assert.equal(member1[4], 25); // totalWithdrawableValue
+            const member2 = await doneth.returnMember(accounts[2]);
+            assert.equal(member2[4], 25); // totalWithdrawableValue
+            const member3 = await doneth.returnMember(accounts[3]);
+            assert.equal(member3[4], 25); // totalWithdrawableValue
+
+
+        });
+    });
 });

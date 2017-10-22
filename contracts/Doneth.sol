@@ -67,6 +67,10 @@ contract Doneth {
     function getFounder() constant returns(address) {
       return founder;
     }
+
+    function getContractInfo() constant returns(string, address, uint256) {
+        return (name, founder, genesisBlockNumber);
+    }
     
     function returnMember (address _address) constant  onlyExisting(_address) returns(bool active, bool admin, uint256 shares, uint256 withdrawn, uint256 totalWithdrawableAmount, string memberName) {
       Member memory m = members[_address];
@@ -128,18 +132,6 @@ contract Doneth {
     // Converting from shares to Eth
     // 100 shares, 1000 total shares 
     // 100 Eth / 1000 total shares = 1/10 eth per share * 100 shares = 10 Eth to cash out
-    function amountOwed(address who) public constant onlyExisting(who) returns (uint256) {
-        // Need to use parts-per notation to compute percentages for lack of floating point division
-        uint256 ethPerSharePPN = this.balance.percent(totalShares, PRECISION); 
-        Division(ethPerSharePPN, this.balance, totalShares);
-        uint256 ethPerShare2 = ethPerSharePPN.mul(members[who].shares);
-        Division(ethPerShare2, this.balance, totalShares);
-        uint256 ethPerShare = ethPerShare2.div(10**PRECISION); 
-        Division(ethPerShare, this.balance, totalShares);
-        //return ethPerShare.mul(members[who].shares);
-        return ethPerShare;
-    }
-
     function calculateTotalWithdrawableAmount(address who) public constant onlyExisting(who) returns (uint256) {
         // Need to use parts-per notation to compute percentages for lack of floating point division
         uint256 ethPerSharePPN = this.balance.percent(totalShares, PRECISION); 
