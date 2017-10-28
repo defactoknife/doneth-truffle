@@ -1,7 +1,7 @@
 pragma solidity ^0.4.15;
 
 /**
- * @title Doneth (Don.eth)
+ * @title Doneth (Doneth)
  * @dev Doneth is a contract that allows members of a project
  * to share donations. Project supporters can submit donations.
  * The admins of the contract determine who is a member, and each
@@ -59,6 +59,7 @@ contract Doneth {
     event AddShare(address who, uint256 addedShares, uint256 newTotalShares);
     event RemoveShare(address who, uint256 removedShares, uint256 newTotalShares);
     event Division(uint256 num, uint256 balance, uint256 shares);
+    event ChangePrivilege(address who, bool oldValue, bool newValue);
 
     // Fallback function accepts Ether from donators
     function () public payable {
@@ -75,12 +76,17 @@ contract Doneth {
         _;
     }
 
+    modifier onlyFounder() { 
+        if (msg.sender != founder) revert();
+        _;
+    }
+
     // Series of getter functions for contract data
-    function getMemberCount() constant returns(uint){
+    function getMemberCount() constant returns(uint) {
       return memberKeys.length;
     }
     
-    function getMemberAtKey (uint key) constant returns(address) {
+    function getMemberAtKey(uint key) constant returns(address) {
       return memberKeys[key];
     }
     
@@ -115,6 +121,13 @@ contract Doneth {
         members[who] = newMember;
         memberKeys.push(who);
         addShare(who, shares);
+    }
+
+    // Only founder can change admin privileges of members; other admins cannot change other admins
+    function changeAdminPrivilege(address who, bool newValue) public onlyFounder() {
+        bool oldValue = members[who].admin;
+        members[who].admin = newValue; 
+        ChangePrivilege(who, oldValue, newValue);
     }
 
     // Increment the number of shares for a member

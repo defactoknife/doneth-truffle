@@ -165,4 +165,46 @@ contract('Doneth', function(accounts) {
             assert.fail('Expected throw not received');
         });
     });
+
+    describe("admin member tests", function() {
+        it("should throw an error if you are not an admin and call admin function", async function() {
+            await doneth.addMember(accounts[1], 100, false, "Maurice McDonald", {from: accounts[0]});
+            try {
+                await doneth.addMember(accounts[2], 100, false, "Richard McDonald", {from: accounts[1]});
+            } catch (error) {
+                const invalidOpcode = error.message.search('invalid opcode') >= 0;
+                assert(invalidOpcode, "Expected throw, got '" + error + "' instead");
+                return;
+            }
+            assert.fail('Expected throw not received');
+        });
+
+        it("should allow you to perform onlyAdmin() function if non-founder member has admin=true", async function() {
+            await doneth.addMember(accounts[1], 100, true, "Maurice McDonald", {from: accounts[0]});
+            await doneth.addMember(accounts[2], 100, true, "John McDonald", {from: accounts[1]});
+            const newMember = await doneth.returnMember(accounts[2]);
+            assert.isNotNull(newMember);
+        });
+
+        it("only founder should be able to call changeAdminPrivilege()", async function() {
+            await doneth.addMember(accounts[1], 100, true, "Maurice McDonald", {from: accounts[0]});
+            await doneth.addMember(accounts[2], 100, true, "John McDonald", {from: accounts[1]});
+
+            var newMember = await doneth.returnMember(accounts[2]);
+            assert.isTrue(newMember[1]);
+
+            try {
+                // Non-founder can't changeAdminPrivilege()
+                await doneth.changeAdminPrivilege(accounts[2], false, {from: accounts[1]});
+            } catch (error) {
+                const invalidOpcode = error.message.search('invalid opcode') >= 0;
+                assert(invalidOpcode, "Expected throw, got '" + error + "' instead");
+            }
+
+            // Founder should be able to change admin privilege
+            await doneth.changeAdminPrivilege(accounts[2], false, {from: accounts[0]});
+            newMember = await doneth.returnMember(accounts[2]);
+            assert.isFalse(newMember[1]);
+        });
+    });
 });
