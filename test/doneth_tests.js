@@ -226,4 +226,80 @@ contract('Doneth', function(accounts) {
             assert.strictEqual(name, "test_new_name");
         });
     });
+
+    describe("shared expense balance tests", function() {
+        it("should have sharedExpense set to 0 at contract initialization", async function() {
+            const sharedExpense = await doneth.getSharedExpense();
+            assert.strictEqual(sharedExpense.toNumber(), 0);
+        });
+
+        it("should error if try to set shared expense greater than contract balance", async function() {
+            try {
+                await doneth.changeSharedExpenseAllocation(100, {from: accounts[0]});
+            } catch (error) {
+                const invalidOpcode = error.message.search('invalid opcode') >= 0;
+                assert(invalidOpcode, "Expected throw, got '" + error + "' instead");
+                return;
+            }
+            assert.fail('Expected throw not received');
+        });
+
+        it("should only allow founder to perform changeSharedExpenseAllocation()", async function() {
+            web3.eth.sendTransaction({from: web3.eth.coinbase, to: doneth.address, value: 5000});
+            await doneth.addMember(accounts[1], 100, true, "Maurice McDonald", {from: accounts[0]});
+            try {
+                // Non-founder cannot call changeSharedExpenseAllocation()
+                await doneth.changeSharedExpenseAllocation(100, {from: accounts[1]});
+            } catch (error) {
+                const invalidOpcode = error.message.search('invalid opcode') >= 0;
+                assert(invalidOpcode, "Expected throw, got '" + error + "' instead");
+            }
+
+            // Founder should be able to perform changeSharedExpenseAllocation()
+            await doneth.changeSharedExpenseAllocation(100, {from: accounts[0]});
+            const sharedExpense = await doneth.getSharedExpense();
+            assert.strictEqual(sharedExpense.toNumber(), 100);
+        });
+
+        it("should allow only admin to withdraw from shared expense balance", async function() {
+            web3.eth.sendTransaction({from: web3.eth.coinbase, to: doneth.address, value: 5000});
+            await doneth.addMember(accounts[1], 1, false, "Maurice McDonald", {from: accounts[0]});
+            await doneth.addMember(accounts[2], 1, true, "John McDonald", {from: accounts[0]});
+            await doneth.changeSharedExpenseAllocation(100, {from: accounts[0]});
+
+            try {
+                // Non-admin cannot withdraw from sharedExpense
+                await doneth.withdrawSharedExpense(100, {from: accounts[1]});
+            } catch (error) {
+                const invalidOpcode = error.message.search('invalid opcode') >= 0;
+                assert(invalidOpcode, "Expected throw, got '" + error + "' instead");
+            }
+
+            console.log(web3.fromWei(web3.eth.getBalance(accounts[2])).toNumber());
+            console.log(web3.eth.getBalance(doneth.address).toNumber());
+
+            await doneth.withdrawSharedExpense(100, {from: accounts[2]}); 
+
+            console.log(web3.fromWei(web3.eth.getBalance(accounts[2])).toNumber());
+            console.log(web3.eth.getBalance(doneth.address).toNumber());
+
+            const sharedExpenseWithdrawn = await doneth.getSharedExpenseWithdrawn();
+            const contractInfo = await doneth.getContractInfo();
+            assert.strictEqual(web3.eth.getBalance(accounts[2]).toNumber(), 100);
+            assert.strictEqual(web3.eth.getBalance(doneth.address).toNumber(), 4900);
+            assert.strictEqual(sharedExpenseWithdrawn.toNumber(), 100);
+            assert.strictEqual(contractInfo[4].toNumber(), 0); // totalWithdrawn
+        });
+
+        /*
+        it("should only allow withdrawing amount greater than remaining sharedExpense", async function() {
+        });
+
+        it("should calculateTotalWithdrawableAmount correctly with sharedExpense > 0", async function() {
+        });
+
+        it("should calculate normal withdrawals correctly interleaved with sharedExpense", async function() {
+        });
+        */
+    });
 });

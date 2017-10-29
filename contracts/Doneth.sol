@@ -34,6 +34,10 @@ contract Doneth {
     // Number of decimal places for floating point division
     uint256 constant public PRECISION = 18;
 
+    // Variables for shared expense allocation
+    uint256 public sharedExpense;
+    uint256 public sharedExpenseWithdrawn;
+
     // Used to keep track of members
     mapping(address => Member) public members;
     address[] public memberKeys;
@@ -61,6 +65,8 @@ contract Doneth {
     event Division(uint256 num, uint256 balance, uint256 shares);
     event ChangePrivilege(address who, bool oldValue, bool newValue);
     event ChangeContractName(string oldValue, string newValue);
+    event ChangeSharedExpense(uint256 contractBalance, uint256 oldValue, uint256 newValue);
+    event WithdrawSharedExpense(address from, uint value, uint256 newTotalWithdrawn);
 
     // Fallback function accepts Ether from donators
     function () public payable {
@@ -84,19 +90,27 @@ contract Doneth {
 
     // Series of getter functions for contract data
     function getMemberCount() constant returns(uint) {
-      return memberKeys.length;
+        return memberKeys.length;
     }
     
     function getMemberAtKey(uint key) constant returns(address) {
-      return memberKeys[key];
+        return memberKeys[key];
     }
     
     function getBalance() constant returns(uint256 balance) {
-      return this.balance;
+        return this.balance;
     }
     
     function getFounder() constant returns(address) {
-      return founder;
+        return founder;
+    }
+
+    function getSharedExpense() constant returns(uint256) {
+        return sharedExpense;
+    }
+
+    function getSharedExpenseWithdrawn() constant returns(uint256) {
+        return sharedExpenseWithdrawn;
     }
 
     function getContractInfo() constant returns(string, address, uint256, uint256, uint256) {
@@ -138,6 +152,17 @@ contract Doneth {
         ChangeContractName(oldName, newName);
     }
 
+    // Shared expense allocation allows all members to withdraw an amount to be used for shared
+    // expenses. Shared expense allocation subtracts from the withdrawable amount each member 
+    // can withdraw based on shares. Only founder can change this amount.
+    function changeSharedExpenseAllocation(uint256 newAllocation) public onlyFounder() {
+        if (newAllocation > this.balance) revert();
+
+        uint256 oldAllocation = sharedExpense;
+        sharedExpense = newAllocation;
+        ChangeSharedExpense(this.balance, oldAllocation, newAllocation);
+    }
+
     // Increment the number of shares for a member
     function addShare(address who, uint256 amount) public onlyAdmin() onlyExisting(who) {
         totalShares = totalShares.add(amount);
@@ -167,12 +192,25 @@ contract Doneth {
         Withdraw(msg.sender, amount, totalWithdrawn);
     }
 
+    // Withdraw from shared expense allocation. Total withdrawable is calculated as 
+    // sharedExpense - sharedExpenseWithdrawn.
+    function withdrawSharedExpense(uint256 amount) public onlyAdmin() onlyExisting(msg.sender) {
+        if (amount > sharedExpense.sub(sharedExpenseWithdrawn)) revert();
+        
+        sharedExpenseWithdrawn = sharedExpenseWithdrawn.add(amount);
+        msg.sender.transfer(amount);
+        WithdrawSharedExpense(msg.sender, amount, totalWithdrawn);
+    }
+
     // Converts from shares to Eth.
     // Ex: 100 shares, 1000 total shares, 100 Eth balance
     // 100 Eth / 1000 total shares = 1/10 eth per share * 100 shares = 10 Eth to cash out
     function calculateTotalWithdrawableAmount(address who) public constant onlyExisting(who) returns (uint256) {
-        // Need to use parts-per notation to compute percentages for lack of floating point division
+        // Total balance to calculate share of = contract balance + totalWithdrawn - sharedExpense
         uint256 balanceSum = this.balance.add(totalWithdrawn);
+        balanceSum = balanceSum.sub(sharedExpense);
+        
+        // Need to use parts-per notation to compute percentages for lack of floating point division
         uint256 ethPerSharePPN = balanceSum.percent(totalShares, PRECISION); 
         uint256 ethPPN = ethPerSharePPN.mul(members[who].shares);
         uint256 ethVal = ethPPN.div(10**PRECISION); 
