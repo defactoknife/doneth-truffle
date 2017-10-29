@@ -60,6 +60,7 @@ contract Doneth {
     event RemoveShare(address who, uint256 removedShares, uint256 newTotalShares);
     event Division(uint256 num, uint256 balance, uint256 shares);
     event ChangePrivilege(address who, bool oldValue, bool newValue);
+    event ChangeContractName(string oldValue, string newValue);
 
     // Fallback function accepts Ether from donators
     function () public payable {
@@ -128,6 +129,13 @@ contract Doneth {
         bool oldValue = members[who].admin;
         members[who].admin = newValue; 
         ChangePrivilege(who, oldValue, newValue);
+    }
+
+    // Only founder can change the contract name
+    function changeContractName(string newName) public onlyFounder() {
+        string storage oldName = name;
+        name = newName;
+        ChangeContractName(oldName, newName);
     }
 
     // Increment the number of shares for a member

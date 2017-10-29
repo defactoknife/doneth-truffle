@@ -206,5 +206,24 @@ contract('Doneth', function(accounts) {
             newMember = await doneth.returnMember(accounts[2]);
             assert.isFalse(newMember[1]);
         });
+
+        it("only founder should be able to call changeContractName()", async function() {
+            var name = await doneth.name();
+            assert.strictEqual(name, "test_name");
+
+            await doneth.addMember(accounts[1], 100, true, "Maurice McDonald", {from: accounts[0]});
+            try {
+                // Non-founder can't changeAdminPrivilege()
+                await doneth.changeContractName("test_new_name", {from: accounts[1]});
+            } catch (error) {
+                const invalidOpcode = error.message.search('invalid opcode') >= 0;
+                assert(invalidOpcode, "Expected throw, got '" + error + "' instead");
+            }
+
+            // Founder should be able to change contract name
+            await doneth.changeContractName("test_new_name", {from: accounts[0]});
+            var name = await doneth.name();
+            assert.strictEqual(name, "test_new_name");
+        });
     });
 });
