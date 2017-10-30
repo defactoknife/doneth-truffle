@@ -66,7 +66,7 @@ contract Doneth {
     event ChangePrivilege(address who, bool oldValue, bool newValue);
     event ChangeContractName(string oldValue, string newValue);
     event ChangeSharedExpense(uint256 contractBalance, uint256 oldValue, uint256 newValue);
-    event WithdrawSharedExpense(address from, uint value, uint256 newTotalWithdrawn);
+    event WithdrawSharedExpense(address from, uint value, uint256 newSharedExpenseWithdrawn);
 
     // Fallback function accepts Ether from donators
     function () public payable {
@@ -199,16 +199,18 @@ contract Doneth {
         
         sharedExpenseWithdrawn = sharedExpenseWithdrawn.add(amount);
         msg.sender.transfer(amount);
-        WithdrawSharedExpense(msg.sender, amount, totalWithdrawn);
+        WithdrawSharedExpense(msg.sender, amount, sharedExpenseWithdrawn);
     }
 
     // Converts from shares to Eth.
     // Ex: 100 shares, 1000 total shares, 100 Eth balance
     // 100 Eth / 1000 total shares = 1/10 eth per share * 100 shares = 10 Eth to cash out
     function calculateTotalWithdrawableAmount(address who) public constant onlyExisting(who) returns (uint256) {
-        // Total balance to calculate share of = contract balance + totalWithdrawn - sharedExpense
+        // Total balance to calculate share from = 
+        // contract balance + totalWithdrawn - sharedExpense + sharedExpenseWithdrawn
         uint256 balanceSum = this.balance.add(totalWithdrawn);
         balanceSum = balanceSum.sub(sharedExpense);
+        balanceSum = balanceSum.add(sharedExpenseWithdrawn);
         
         // Need to use parts-per notation to compute percentages for lack of floating point division
         uint256 ethPerSharePPN = balanceSum.percent(totalShares, PRECISION); 

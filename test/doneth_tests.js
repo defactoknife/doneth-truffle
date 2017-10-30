@@ -262,44 +262,107 @@ contract('Doneth', function(accounts) {
         });
 
         it("should allow only admin to withdraw from shared expense balance", async function() {
-            web3.eth.sendTransaction({from: web3.eth.coinbase, to: doneth.address, value: 5000});
+            // value in Wei units
+            web3.eth.sendTransaction({from: web3.eth.coinbase, to: doneth.address, value: 1*10**18});
             await doneth.addMember(accounts[1], 1, false, "Maurice McDonald", {from: accounts[0]});
             await doneth.addMember(accounts[2], 1, true, "John McDonald", {from: accounts[0]});
-            await doneth.changeSharedExpenseAllocation(100, {from: accounts[0]});
+            // 1/10 of 1 Eth
+            await doneth.changeSharedExpenseAllocation(1*10**17, {from: accounts[0]});
 
             try {
                 // Non-admin cannot withdraw from sharedExpense
-                await doneth.withdrawSharedExpense(100, {from: accounts[1]});
+                await doneth.withdrawSharedExpense(1*10**17, {from: accounts[1]});
             } catch (error) {
                 const invalidOpcode = error.message.search('invalid opcode') >= 0;
                 assert(invalidOpcode, "Expected throw, got '" + error + "' instead");
             }
 
-            console.log(web3.fromWei(web3.eth.getBalance(accounts[2])).toNumber());
-            console.log(web3.eth.getBalance(doneth.address).toNumber());
+            const oldBalance = web3.fromWei(web3.eth.getBalance(accounts[2]));
+            await doneth.withdrawSharedExpense(1*10**17, {from: accounts[2]}); 
 
-            await doneth.withdrawSharedExpense(100, {from: accounts[2]}); 
-
-            console.log(web3.fromWei(web3.eth.getBalance(accounts[2])).toNumber());
-            console.log(web3.eth.getBalance(doneth.address).toNumber());
-
+            const newBalance = web3.fromWei(web3.eth.getBalance(accounts[2]));
+            const diff = newBalance - oldBalance;
             const sharedExpenseWithdrawn = await doneth.getSharedExpenseWithdrawn();
             const contractInfo = await doneth.getContractInfo();
-            assert.strictEqual(web3.eth.getBalance(accounts[2]).toNumber(), 100);
-            assert.strictEqual(web3.eth.getBalance(doneth.address).toNumber(), 4900);
-            assert.strictEqual(sharedExpenseWithdrawn.toNumber(), 100);
+
+            // range for balance difference to account for gas cost
+            assert.isTrue(diff > 0.09 && diff < 0.1);
+            assert.strictEqual(web3.eth.getBalance(doneth.address).toNumber(), 9*10**17);
+            assert.strictEqual(sharedExpenseWithdrawn.toNumber(), 1*10**17);
             assert.strictEqual(contractInfo[4].toNumber(), 0); // totalWithdrawn
         });
 
-        /*
-        it("should only allow withdrawing amount greater than remaining sharedExpense", async function() {
+        it("should only allow withdrawing amount <= remaining sharedExpense", async function() {
+            // value in Wei units
+            web3.eth.sendTransaction({from: web3.eth.coinbase, to: doneth.address, value: 1*10**18});
+            // 1/10 of 1 Eth
+            await doneth.changeSharedExpenseAllocation(1*10**17, {from: accounts[0]});
+
+            try {
+                // cannot overdraw sharedExpense
+                await doneth.withdrawSharedExpense(2*10**17, {from: accounts[2]}); 
+            } catch (error) {
+                const invalidOpcode = error.message.search('invalid opcode') >= 0;
+                assert(invalidOpcode, "Expected throw, got '" + error + "' instead");
+                return;
+            }
+            assert.fail('Expected throw not received');
         });
 
         it("should calculateTotalWithdrawableAmount correctly with sharedExpense > 0", async function() {
+            // value in Wei units
+            web3.eth.sendTransaction({from: web3.eth.coinbase, to: doneth.address, value: 1*10**18});
+            // 1/10 of 1 Eth
+            await doneth.changeSharedExpenseAllocation(1*10**17, {from: accounts[0]});
+            await doneth.addMember(accounts[1], 1, false, "Maurice McDonald", {from: accounts[0]});
+
+            const totalWithdrawableAmount = await doneth.calculateTotalWithdrawableAmount(accounts[0]); 
+            // should be half of 9/10 of 1 Eth
+            assert.strictEqual(4.5*10**17, totalWithdrawableAmount.toNumber());
         });
 
         it("should calculate normal withdrawals correctly interleaved with sharedExpense", async function() {
+            // value in Wei units
+            web3.eth.sendTransaction({from: web3.eth.coinbase, to: doneth.address, value: 1*10**18});
+            // 1/10 of 1 Eth
+            await doneth.changeSharedExpenseAllocation(1*10**17, {from: accounts[0]});
+            await doneth.addMember(accounts[1], 1, true, "Maurice McDonald", {from: accounts[0]});
+
+            // accounts[0] withdraws 0.45 Eth from shares
+            await doneth.withdraw(4.5*10**17, {from: accounts[0]});
+            var memberStruct = await doneth.returnMember(accounts[0]);
+            var contractStruct = await doneth.getContractInfo();
+            assert.strictEqual(web3.eth.getBalance(doneth.address).toNumber(), 5.5*10**17);
+            assert.strictEqual(memberStruct[3].toNumber(), 4.5*10**17); // member.withdrawn
+            assert.strictEqual(contractStruct[4].toNumber(), 4.5*10**17); // contract.totalWithdrawn
+
+            // accounts[1] withdraws 0.1 Eth from sharedExpense
+            await doneth.withdrawSharedExpense(1*10**17, {from: accounts[1]}); 
+            var memberStruct = await doneth.returnMember(accounts[1]);
+            var contractStruct = await doneth.getContractInfo();
+            var sharedExpense = await doneth.getSharedExpense();
+            var sharedExpenseWithdrawn = await doneth.getSharedExpenseWithdrawn();
+            assert.strictEqual(web3.eth.getBalance(doneth.address).toNumber(), 4.5*10**17);
+            assert.strictEqual(memberStruct[3].toNumber(), 0); // member.withdrawn
+            assert.strictEqual(contractStruct[4].toNumber(), 4.5*10**17); // contract.totalWithdrawn
+            assert.strictEqual(sharedExpense.toNumber(), 1*10**17);
+            assert.strictEqual(sharedExpenseWithdrawn.toNumber(), 1*10**17);
+
+            // Total withdrawable amount should be 0.45 Eth
+            const totalWithdrawableAmount = await doneth.calculateTotalWithdrawableAmount(accounts[1]); 
+            assert.strictEqual(4.5*10**17, totalWithdrawableAmount.toNumber());
+
+            // accounts[1] withdraws 0.45 Eth from shares
+            await doneth.withdraw(4.5*10**17, {from: accounts[1]});
+            var memberStruct = await doneth.returnMember(accounts[1]);
+            var contractStruct = await doneth.getContractInfo();
+            var sharedExpense = await doneth.getSharedExpense();
+            var sharedExpenseWithdrawn = await doneth.getSharedExpenseWithdrawn();
+            assert.strictEqual(web3.eth.getBalance(doneth.address).toNumber(), 0);
+            assert.strictEqual(memberStruct[3].toNumber(), 4.5*10**17); // member.withdrawn
+            assert.strictEqual(contractStruct[4].toNumber(), 9*10**17); // contract.totalWithdrawn
+            assert.strictEqual(sharedExpense.toNumber(), 1*10**17);
+            assert.strictEqual(sharedExpenseWithdrawn.toNumber(), 1*10**17);
         });
-        */
     });
 });
